@@ -1,6 +1,7 @@
 import sys, random, time, pygame, json
 pygame.init()
-#Maze generator. Will comment soon.
+#Ye11ow
+#Maze generator. Specify size on line 210
 
 class SolTree(object):
 	def __init__(self, iparent, ix, iy, ivisit):
@@ -17,23 +18,28 @@ class BaseMaze(object):
 		self.screen =  pygame.display.set_mode(((self.side * 20) + 80,(self.side *20) + 80))
 		self.screen.fill((150,150,150))
 
-	def displayMaze(self, boardArray):
+	def displayMaze(self, boardArray, route=(None, None)):
 		font = pygame.font.SysFont("arialblack", 20)
 		eCell = font.render("E", True, (0, 0, 0), (255,241,38))
 		sCell = font.render("S", True, (0, 0, 0), (255,241,38))
 		self.screen.blit(sCell, (40, 10))
-		self.screen.blit(eCell, ((self.side * 20) + 26, (self.side * 20) + 40)) #26 is right
+		self.screen.blit(eCell, ((self.side * 20) + 24, (self.side * 20) + 40)) #26 is right
 
-		for y in range(self.side):
-			for x in range(self.side):
-				newCell = self.generateCell(boardArray, x, y)
+		for x in range(self.side):
+			for y in range(self.side):
+				if (x, y) in route:
+					newCell = self.generateCell(boardArray, x, y, True)
+				else:
+					newCell = self.generateCell(boardArray, x, y)
 				newSpot = (40 +(20 * x), 40 + (20 * y))
 				self.screen.blit(newCell, newSpot)
 		pygame.display.update()
-		
-	def generateCell(self, board, x, y):
+
+	
+	def generateCell(self, board, x, y, onRoute=False):
 		BLACK = (0, 0, 0)
 		WHITE = (255, 255, 255)
+		RED = (255, 0, 0)
 		tempCell = pygame.Surface((20,20))
 		#generate base surface (4x4 BLACK squares in every corner of a 20x20 image)
 		tempCell.fill(WHITE)
@@ -41,6 +47,9 @@ class BaseMaze(object):
 		pygame.draw.rect(tempCell, BLACK, (0, 16, 4, 4))#bottom left
 		pygame.draw.rect(tempCell, BLACK, (16, 0, 4, 4)) #top right
 		pygame.draw.rect(tempCell, BLACK, (16, 16, 4, 4)) #bottom right
+
+		if onRoute is True:
+			pygame.draw.rect(tempCell, RED, (8, 8, 4, 4))
 
 		if board[x][y][0] and board[x][y][1] and board[x][y][2] and board[x][y][3] is True:
 			pygame.draw.rect(tempCell, BLACK, (0, 0, 20, 20))
@@ -99,7 +108,7 @@ class BaseMaze(object):
 		#board[0][0][0] = False
 		#board[self.side-1][self.side-1][2] = False
 
-		return board
+		return(board)
 	
 	def parentTrap(self, finalCell, tBoard):
 		treeArray = tBoard
@@ -171,17 +180,24 @@ class BaseMaze(object):
 		return(route)
 		
 
-	def boardGen(self, iterations, solved=False):
+	def boardGen(self, iterations, showSolution=False):
 		y = 0
+		print("Processing %i boards." % iterations)
 		for x in range(iterations):
-			#masterBoard = self.boardInit(self.board)
+			print("\rBoards processed: %i" % (x + 1), end=""),
 			masterBoard = self.contentGen(self.boardInit(self.board))
 
 			route = self.solutionGen(masterBoard)
 			routeLength = len(route) - 1
 
 			if route[routeLength][0] == self.side - 1 and route[routeLength][1] == self.side - 1:
-				self.displayMaze(masterBoard)
+				#if len(route) >= self.side * 2.5: #Can be used to force longer routes, need to indent everything below
+
+				if showSolution is True:
+					self.displayMaze(masterBoard, route)
+				else:
+					self.displayMaze(masterBoard)
+
 				# outFile = open(".\mazes\%s.json" % x, 'w')
 				# json.dump(masterBoard, outFile)
 				# outFile.close()
@@ -189,10 +205,10 @@ class BaseMaze(object):
 				y += 1
 				#pygame.time.wait(100)
 
-		
 
-#MAIN	
-main_board = BaseMaze(20)#20 is board side length, adjust here
+#MAIN
+side = 20 #number is board side length, adjust here
+main_board = BaseMaze(side) 
 
-main_board.boardGen(1000)#number of times to generate a board and test it. The larger the side length, the larger this number needs to be.
+main_board.boardGen(side * 25, True) #(number of boardGen iterations, showSolution=False)
 pygame.quit()
